@@ -4,13 +4,12 @@
       <section>
         <div class="flex">
           <div class="max-w-xs">
-            <label for="wallet" class="block text-sm font-medium text-gray-700"
-              >Тикер</label
-            >
+            <label for="wallet" class="block text-sm font-medium text-gray-700">Тикер</label>
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="tiker"
                 v-on:keydown.enter="add"
+                @input="helperMonetName(tiker)"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -23,23 +22,10 @@
             >
               <span
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+                v-for="item in uniqueArr()"
+                :key="item.index"
               >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
+                {{item }}
               </span>
             </div>
             <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
@@ -47,7 +33,6 @@
         </div>
         <button
           v-on:click="add"
-          
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -165,10 +150,23 @@ export default {
       tickers: [],
       sel: null,
       graph: [],
+      helper: [],
+      allMonets: this.getAllMonets(),
     };
   },
 
+  mounted() {
+    this.getAllMonets().then((monets) => {
+      this.allMonets = monets;
+    });
+  },
+
   methods: {  // методы которые будут доступны снаружи
+
+    uniqueArr(){
+      return new Set(this.helper)
+    } ,
+
     add() {
       const currentTicker = {
         name: this.tiker,
@@ -188,6 +186,7 @@ export default {
       }
       }, 3000)
       this.tiker = "";
+      this.helper = '';
     },
 
     handleDelete(tickerToRemove) {
@@ -204,8 +203,29 @@ export default {
     select(ticker){
       this.sel = ticker;
       this.graph = [];
-  },
-}
+    },
+
+    async getAllMonets() {
+      const x = await fetch(
+        "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+      );
+      return await x.json();
+    },
+  
+    
+    helperMonetName(monets){
+      const x = this.allMonets.Data;
+      const y = Object.entries(x)
+      y.forEach(item =>{
+        if(monets == item[0]){
+          console.log(item[0])
+            this.helper.push(item[0])
+            console.log(this.helper) 
+        }
+      })
+    }
+    
+  }
 };
 </script>
 
