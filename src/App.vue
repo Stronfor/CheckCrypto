@@ -25,7 +25,7 @@
                 v-for="item in uniqueArr()"
                 :key="item.index"
               >
-                {{item }}
+                {{item}}
               </span>
             </div>
             <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
@@ -53,10 +53,24 @@
         </button>
       </section>
       <template v-if="tickers.length">
+        <hr class="w-full border-t border-gray-600 my-4">
+        <p>Фильтр: <input v-model="filter" />
+          <button 
+            v-if="page > 1"
+            @click="page = page - 1" 
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            назад
+          </button>
+          <button 
+            v-if="hasNextPage"
+            @click="page = page + 1" 
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            вперед
+          </button></p>
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="item in tickers"
+            v-for="item in filteredTickers()"
             v-bind:key="item.name"
             @click="select(item)"
             :class="{
@@ -150,11 +164,28 @@ export default {
       tickers: [],
       sel: null,
       graph: [],
-      helper: [],
+      helper: [].slice(0, 4),
       allMonets: this.getAllMonets(),
+      page: 1,
+      filter: "",
+      hasNextPage: true,
     };
   },
   created(){
+    //// работа с адресной строкой
+      const windowData = Object.fromEntries(
+        new URL(window.location).searchParams.entries()
+      );
+
+      if (windowData){
+        this.filter = windowData.filter;
+      }
+
+      if (windowData.page){
+        this.page = windowData.page;
+      }
+      //
+
       const tickersData = localStorage.getItem('cryptonomicon-list');
 
       if (tickersData){
@@ -172,6 +203,17 @@ export default {
   },
 
   methods: {  // методы которые будут доступны снаружи
+
+    filteredTickers(){
+      const start = (this.page - 1) * 6;
+      const end = this.page * 6;
+
+      const filteredTickers = this.tickers.filter(item => item.name.includes(this.filter));
+      
+      this.hasNextPage = filteredTickers.length > end;
+      
+      return filteredTickers.slice(start, end)
+    },
 
     uniqueArr(){
       return new Set(this.helper)
@@ -196,13 +238,15 @@ export default {
         name: this.tiker,
         price: "-",
       };
+
       this.tickers.push(currentTicker);
 
       localStorage.setItem('cryptonomicon-list', JSON.stringify(this.tickers));
       this.subscribeToUpdates(currentTicker.name)
 
       this.tiker = "";
-      this.helper = '';
+      this.helper = [];
+      this.filter = '';
     },
 
     handleDelete(tickerToRemove) {
@@ -234,13 +278,26 @@ export default {
       const y = Object.entries(x)
       y.forEach(item =>{
         if(monets.toLowerCase() == item[0].toLocaleLowerCase()){
-          console.log(item[0])
             this.helper.push(item[0])
-            console.log(this.helper) 
         }
       })
     }
     
+  },
+
+  watch: {
+    filter(){
+      this.page = 1; // при изминении фильтра страница начинается с 1 страныцы
+
+        // прописать в сонсоле браузера ===> new URL(window.location)
+      // ПРИ перезагрузке чтобы не слитала страница у фильтрации (можно и в localStorage сохранить)
+      // при поиске сразу вписывается фильт и URL 
+      //const { protocol, host, pathname } = window.location // из винды достали адресс 
+      window.history.pushState(null, document.title, `${window.location.pathname}?filter=${this.filter}&page=${this.page}`);
+    },
+    page() {
+       window.history.pushState(null, document.title, `${window.location.pathname}?filter=${this.filter}&page=${this.page}`);
+    },
   }
 };
 </script>
