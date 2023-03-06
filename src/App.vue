@@ -154,6 +154,16 @@ export default {
       allMonets: this.getAllMonets(),
     };
   },
+  created(){
+      const tickersData = localStorage.getItem('cryptonomicon-list');
+
+      if (tickersData){
+        this.tickers = JSON.parse(tickersData);
+        this.tickers.forEach(item => {
+          this.subscribeToUpdates(item.name)
+        })
+      }
+    },
 
   mounted() {
     this.getAllMonets().then((monets) => {
@@ -167,6 +177,20 @@ export default {
       return new Set(this.helper)
     } ,
 
+    subscribeToUpdates(tickerName) {
+      setInterval(async() => {
+        const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=2ade52005e3dac737e3cf9283393e5eabda16fa8f00a8e4aaf35c51aa5000517`);
+        const data = await f.json();
+
+      this.tickers.find(t => t.name === tickerName).price = data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+
+      if(this.sel?.name === tickerName){
+        this.graph.push(data.USD)
+      }
+      }, 3000)
+    },
+
+
     add() {
       const currentTicker = {
         name: this.tiker,
@@ -174,17 +198,9 @@ export default {
       };
       this.tickers.push(currentTicker);
 
-      
-      setInterval(async() => {
-        const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=2ade52005e3dac737e3cf9283393e5eabda16fa8f00a8e4aaf35c51aa5000517`);
-        const data = await f.json();
+      localStorage.setItem('cryptonomicon-list', JSON.stringify(this.tickers));
+      this.subscribeToUpdates(currentTicker.name)
 
-      this.tickers.find(t => t.name === currentTicker.name).price = data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-
-      if(this.sel?.name === currentTicker.name){
-        this.graph.push(data.USD)
-      }
-      }, 3000)
       this.tiker = "";
       this.helper = '';
     },
@@ -217,7 +233,7 @@ export default {
       const x = this.allMonets.Data;
       const y = Object.entries(x)
       y.forEach(item =>{
-        if(monets == item[0]){
+        if(monets.toLowerCase() == item[0].toLocaleLowerCase()){
           console.log(item[0])
             this.helper.push(item[0])
             console.log(this.helper) 
