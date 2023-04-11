@@ -108,7 +108,8 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ selectedTicker.name }} - USD
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div class="flex items-end border-gray-600 border-b border-l h-64" 
+            ref="graph">
           <div
             v-for="(bar, idx) in normalizedGraph"
             :key="idx"
@@ -176,17 +177,24 @@ export default {
 
       tickers: [],
       selectedTicker: null,
-
+      maxGraphElements: this.maxGraphElements,
       graph: [],
 
       page: 1
     };
+  },
+  mounted(){
+    window.addEventListener('resize', this.calculetMaxGraphElements)
+  },
+  beforeUnmount(){
+    window.removeEventListener('resize', this.calculetMaxGraphElements)
   },
 
   created() {
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     );
+    
 
     const VALID_KEYS = ["filter", "page"];
 
@@ -261,12 +269,22 @@ export default {
   },
 
   methods: {
+    calculetMaxGraphElements(){
+      if (!this.$refs.graph){
+        return;
+      }
+      this.maxGraphElements =  this.$refs.graph.clientWidth / 38;
+    },
+
     updateTicker(tickerName, price) {
       this.tickers
         .filter(t => t.name === tickerName)
         .forEach(t => {
           if (t === this.selectedTicker) {
             this.graph.push(price);
+            while (this.graph.length > this.maxGraphElements){
+              this.graph.shift();
+            }
           }
           t.price = price;
         });
