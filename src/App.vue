@@ -177,7 +177,7 @@ export default {
 
       tickers: [],
       selectedTicker: null,
-      maxGraphElements: this.maxGraphElements,
+      maxGraphElements: 1,
       graph: [],
 
       page: 1
@@ -331,6 +331,8 @@ export default {
   watch: {
     selectedTicker() {
       this.graph = [];
+
+      this.$nextTick().then(this.calculetMaxGraphElements);
     },
 
     tickers(newValue, oldValue) {
